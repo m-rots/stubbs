@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -21,11 +20,6 @@ var cli struct {
 	Lifetime int      `optional:"" default:"3600" name:"lifetime" short:"l" help:"Token lifetime in seconds (max. 3600)"`
 }
 
-type googleServiceAccount struct {
-	Email      string `json:"client_email"`
-	PrivateKey string `json:"private_key"`
-}
-
 func main() {
 	ctx := kong.Parse(&cli, kong.Name("stubbs"), kong.UsageOnError())
 
@@ -39,28 +33,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.Open(cli.Path)
+	scopes := mapScopes(cli.Scopes)
+	account, err := stubbs.FromFile(cli.Path, scopes, cli.Lifetime)
 	if err != nil {
 		fmt.Println("Could not open: " + cli.Path)
 		os.Exit(1)
 	}
-
-	decoder := json.NewDecoder(file)
-	sa := new(googleServiceAccount)
-
-	if decoder.Decode(sa) != nil {
-		fmt.Println("Error decoding service account")
-		os.Exit(1)
-	}
-
-	priv, err := stubbs.ParseKey(sa.PrivateKey)
-	if err != nil {
-		fmt.Println("Invalid private key")
-		os.Exit(1)
-	}
-
-	scopes := mapScopes(cli.Scopes)
-	account := stubbs.New(sa.Email, &priv, scopes, cli.Lifetime)
 
 	token, exp, err := account.AccessToken()
 	if err != nil {
@@ -73,7 +51,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Printf("Email:\n%v\n\n", sa.Email)
+	fmt.Printf("Email:\n%v\n\n", account.Email())
 	fmt.Printf("Scopes:\n%v\n\n", strings.Join(scopes, "\n"))
 
 	fmt.Printf("Access Token:\n%v\n\n", token)

@@ -16,6 +16,9 @@ import (
 // the key of the service account is deleted
 // or when the service account itself is deleted.
 func (acc *Stubbs) AccessToken() (string, int64, error) {
+	acc.mtx.Lock()
+	defer acc.mtx.Unlock()
+
 	if acc.token == "" || time.Now().Unix() > acc.exp {
 		err := acc.refreshToken()
 		if err != nil {
@@ -24,6 +27,11 @@ func (acc *Stubbs) AccessToken() (string, int64, error) {
 	}
 
 	return acc.token, acc.exp, nil
+}
+
+// Email returns the Service Account's email address.
+func (acc *Stubbs) Email() string {
+	return acc.clientEmail
 }
 
 type oauthResponse struct {
@@ -47,18 +55,16 @@ func (acc *Stubbs) refreshToken() error {
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return fmt.Errorf("Received status code: %v", res.StatusCode)
+		return fmt.Errorf("received status code: %v", res.StatusCode)
 	}
 
 	response := new(oauthResponse)
-
-	decoder := json.NewDecoder(res.Body)
-	if decoder.Decode(response) != nil {
-		return fmt.Errorf("JSON decoding error")
+	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
+		return fmt.Errorf("json decoding error")
 	}
 
 	if response.AccessToken == "" {
-		return fmt.Errorf("Did not retrieve access token")
+		return fmt.Errorf("did not retrieve access token")
 	}
 
 	acc.exp = exp
