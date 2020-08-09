@@ -24,10 +24,8 @@ Finally, the CLI renders a small overview of the parsed email address, authentic
 If you already have Go installed you can run the following to install the CLI globally:
 
 ```bash
-GO111MODULE=off go get github.com/m-rots/stubbs/cmd/stubbs
+GO111MODULE=off go get -u github.com/m-rots/stubbs/cmd/stubbs
 ```
-
-If you do not have Go installed, you can download the latest binaries on the [releases page](https://github.com/m-rots/stubbs/releases).
 
 ### CLI example
 
@@ -92,7 +90,7 @@ func main() {
     os.Exit(1)
   }
 
-  account := stubbs.New(clientEmail, &priv, scopes, 3600)
+  account := stubbs.New(clientEmail, &priv, scopes)
 
   token, exp, err := account.AccessToken()
   if err != nil {
@@ -111,11 +109,5 @@ func main() {
 To build the CLI make sure you have [Go](https://golang.org/doc/install) installed and then run the following:
 
 ```bash
-go build -o bin/stubbs cmd/stubbs/main.go
-```
-
-To build the CLI for multiple operating systems and architectures, run the bash file:
-
-```bash
-bash build.sh
+go build -o stubbs ./cmd/stubbs
 ```

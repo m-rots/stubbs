@@ -17,11 +17,15 @@ var cli struct {
 	Path     string   `arg:"" name:"path" help:"Service Account file path" type:"path"`
 	Scopes   []string `required:"" name:"scope" short:"s" help:"Authentication scopes"`
 	Terse    bool     `optional:"" name:"terse" short:"t" help:"Only show the access token"`
-	Lifetime int      `optional:"" default:"3600" name:"lifetime" short:"l" help:"Token lifetime in seconds (max. 3600)"`
+	Lifetime int64    `optional:"" default:"3600" name:"lifetime" short:"l" help:"Token lifetime in seconds (max. 3600)"`
 }
 
 func main() {
 	ctx := kong.Parse(&cli, kong.Name("stubbs"), kong.UsageOnError())
+
+	if cli.Lifetime < 1 {
+		fmt.Println("Minimum lifetime is 1 second")
+	}
 
 	if cli.Lifetime > 3600 {
 		fmt.Println("Maximum lifetime is 3600 seconds")
@@ -34,7 +38,7 @@ func main() {
 	}
 
 	scopes := mapScopes(cli.Scopes)
-	account, err := stubbs.FromFile(cli.Path, scopes, cli.Lifetime)
+	account, err := stubbs.FromFile(cli.Path, scopes, stubbs.WithLifetime(cli.Lifetime, 0))
 	if err != nil {
 		fmt.Println("Could not open: " + cli.Path)
 		os.Exit(1)

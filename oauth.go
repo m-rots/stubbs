@@ -19,7 +19,7 @@ func (acc *Stubbs) AccessToken() (string, int64, error) {
 	acc.mtx.Lock()
 	defer acc.mtx.Unlock()
 
-	if acc.token == "" || time.Now().Unix() > acc.exp {
+	if acc.token == "" || time.Now().Unix() >= acc.exp {
 		err := acc.refreshToken()
 		if err != nil {
 			return "", 0, err
@@ -67,7 +67,7 @@ func (acc *Stubbs) refreshToken() error {
 		return fmt.Errorf("did not retrieve access token")
 	}
 
-	acc.exp = exp
+	acc.exp = exp - acc.safeRefresh
 	acc.token = response.AccessToken
 
 	return nil
